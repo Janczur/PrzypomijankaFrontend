@@ -1,10 +1,12 @@
 <template>
   <nav>
     <v-app-bar app color="primary" dark>
-      <v-app-bar-title class="text-uppercase">
-        <span>Przypomi</span>
-        <span class="font-weight-bold">Janka</span>
-      </v-app-bar-title>
+      <router-link :to="{ name: 'Home' }">
+        <v-btn text>
+          <v-icon>mdi-home</v-icon>
+          <span class="ml-2 text--white">Przypomijanka</span>
+        </v-btn>
+      </router-link>
 
       <v-spacer></v-spacer>
 
@@ -26,6 +28,6 @@
 
 <script>
 export default {
-  name: "AppNavigation"
+  name: "PublicNavigation"
 };
 </script>
