@@ -1,9 +1,14 @@
 import Vue from "vue";
 import Vuetify from "vuetify/lib/framework";
+import pl from "vuetify/es5/locale/pl";
 
 Vue.use(Vuetify);
 
 export default new Vuetify({
+  lang: {
+    locales: { pl },
+    current: "pl"
+  },
   theme: {
     themes: {
       light: {
@@ -13,7 +18,8 @@ export default new Vuetify({
         error: "#f44336",
         warning: "#ff9800",
         info: "#2196f3",
-        success: "#8bc34a"
+        success: "#8bc34a",
+        inactive: "#272727"
       },
       dark: {
         primary: "#607d8b",
@@ -24,6 +30,9 @@ export default new Vuetify({
         info: "#03a9f4",
         success: "#4caf50"
       }
+    },
+    options: {
+      customProperties: true
     }
   }
 });

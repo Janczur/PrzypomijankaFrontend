@@ -45,7 +45,21 @@ const routes = [
         path: "",
         name: "Dashboard",
         component: () =>
-          import(/* webpackChunkName: "login" */ "@/views/app/Dashboard.vue")
+          import(
+            /* webpackChunkName: "dashboard" */ "@/views/app/Dashboard.vue"
+          )
+      },
+      {
+        path: "/reminders",
+        name: "Reminders",
+        component: () =>
+          import(/* webpackChunkName: "reminder" */ "@/views/app/Reminder.vue")
+      },
+      {
+        path: "/profile",
+        name: "Profile",
+        component: () =>
+          import(/* webpackChunkName: "profile" */ "@/views/app/Profile.vue")
       }
     ]
   }

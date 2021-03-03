@@ -8,6 +8,13 @@
         </v-btn>
       </router-link>
 
+      <router-link :to="{ name: 'Dashboard' }">
+        <v-btn text>
+          <v-icon>mdi-view-dashboard</v-icon>
+          <span class="ml-2 text--white">Panel</span>
+        </v-btn>
+      </router-link>
+
       <v-spacer></v-spacer>
 
       <router-link :to="{ name: 'Login' }">
