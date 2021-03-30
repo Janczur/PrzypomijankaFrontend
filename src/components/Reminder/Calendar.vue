@@ -46,7 +46,7 @@
           </v-menu>
         </v-toolbar>
       </v-sheet>
-      <v-sheet height="500">
+      <v-sheet height="600">
         <v-calendar
           ref="calendar"
           v-model="focus"
@@ -63,18 +63,11 @@
           :close-on-content-click="false"
           :activator="selectedElement"
           offset-x
+          max-width="550px"
         >
-          <v-card color="grey lighten-4" width="500px" flat>
-            <v-toolbar :color="getEventColor(selectedEvent)" dark>
-              <v-switch
-                v-model="selectedEvent.active"
-                @change="toggleReminderState(selectedEvent)"
-                class="mt-5"
-              ></v-switch>
-              <v-toolbar-title
-                v-html="selectedEvent.name"
-                class="ml-2"
-              ></v-toolbar-title>
+          <v-card flat>
+            <v-toolbar :color="selectedEvent.color" dark>
+              <v-toolbar-title v-html="selectedEvent.name"></v-toolbar-title>
               <v-spacer></v-spacer>
               <div
                 v-for="(channel, index) in selectedEvent.channels"
@@ -83,7 +76,7 @@
                 <v-tooltip top>
                   <template v-slot:activator="{ on, attrs }">
                     <v-chip color="white" class="ml-3" v-bind="attrs" v-on="on">
-                      <v-icon :color="getEventColor(selectedEvent)">{{
+                      <v-icon :color="selectedEvent.color">{{
                         getReminderChannelIcon(channel)
                       }}</v-icon>
                     </v-chip>
@@ -92,38 +85,117 @@
                 </v-tooltip>
               </div>
             </v-toolbar>
-            <v-card-text>
-              {{ selectedEvent.description }}
-              {{ selectedEvent.id }}
+            <v-card-text style="position: relative;">
+              <v-chip
+                class="pa-4"
+                :color="selectedEvent.color"
+                text-color="white"
+                elevation-10
+                style="position: absolute; top:-16px; left:0;"
+              >
+                <v-icon left>{{
+                  selectedEvent.sent
+                    ? "mdi-bell-check-outline"
+                    : "mdi-bell-ring-outline"
+                }}</v-icon>
+
+                {{ displayHumanReadableReminderDateDistance(selectedEvent) }}
+              </v-chip>
+              <div class="mt-2">
+                {{ selectedEvent.description }}
+              </div>
             </v-card-text>
             <v-card-actions>
-              <v-btn
-                text
-                :color="getEventColor(selectedEvent)"
-                @click="selectedOpen = false"
-              >
+              <edit-reminder-dialog
+                :reminder="selectedEvent"
+              ></edit-reminder-dialog>
+
+              <v-spacer></v-spacer>
+
+              <v-btn text color="grey" @click="selectedOpen = false">
                 Anuluj
-              </v-btn>
-              <v-btn
-                v-if="currentlyEditing !== selectedEvent.id"
-                text
-                :color="getEventColor(selectedEvent)"
-                @click.prevent="editEvent(selectedEvent)"
-              >
-                Edytuj </v-btn
-              ><v-btn
-                v-else
-                text
-                :color="getEventColor(selectedEvent)"
-                @click.prevent="updateEvent(selectedEvent)"
-              >
-                Zapisz
               </v-btn>
 
               <v-btn @click="deleteEvent(selectedEvent.id)" icon>
-                <v-icon>mdi-delete</v-icon>
+                <v-icon color="error">mdi-delete</v-icon>
               </v-btn>
             </v-card-actions>
+            <v-expand-transition
+              v-if="selectedEvent.hasPreReminder || selectedEvent.isCyclic"
+            >
+              <v-expansion-panels accordion focusable multiple>
+                <v-expansion-panel v-if="selectedEvent.hasPreReminder">
+                  <v-expansion-panel-header class="px-4" ripple>
+                    <div class="flex align-center">
+                      <v-icon :color="selectedEvent.color">
+                        mdi-bell-alert-outline
+                      </v-icon>
+                      <span class="ml-2">Przypomnij</span>
+                      <span class="font-weight-bold">
+                        {{ selectedEvent.pre_reminder.days_before }}
+                        {{
+                          selectedEvent.pre_reminder.days_before === 1
+                            ? "dzień"
+                            : "dni"
+                        }}
+                      </span>
+                      <span>wcześniej</span>
+                    </div>
+                    <template v-slot:actions>
+                      <v-icon :color="selectedEvent.color">
+                        $expand
+                      </v-icon>
+                    </template>
+                  </v-expansion-panel-header>
+                  <v-expansion-panel-content>
+                    <div class="pt-3 grey--text text--darken-1 text-body-2">
+                      <div>
+                        Przedprzypomnienie będzie wysyłane zawsze
+                        <span class="font-weight-bold">
+                          {{ selectedEvent.pre_reminder.days_before }}
+                          {{
+                            selectedEvent.pre_reminder.days_before === 1
+                              ? "dzień"
+                              : "dni"
+                          }}
+                        </span>
+                        przed głównym przypomnieniem.
+                      </div>
+                      <div class="mt-2">
+                        <span>Wysyłka</span>
+                        <v-icon :color="selectedEvent.color">
+                          mdi-calendar-clock
+                        </v-icon>
+                        {{
+                          displayHumanReadablePreReminderDateDistance(
+                            selectedEvent
+                          )
+                        }}
+                      </div>
+                    </div>
+                  </v-expansion-panel-content>
+                </v-expansion-panel>
+                <v-expansion-panel v-if="selectedEvent.isCyclic" readonly>
+                  <v-expansion-panel-header class="px-4" disable-icon-rotate>
+                    <div>
+                      <v-icon :color="selectedEvent.color">
+                        mdi-calendar-multiple-check
+                      </v-icon>
+                      <span class="ml-2">Przypominaj cyklicznie co</span>
+                      <span class="font-weight-bold">
+                        {{ displayReminderCyclic(selectedEvent.cyclic) }}
+                      </span>
+                    </div>
+                    <template v-slot:actions>
+                      <v-icon :color="selectedEvent.color">
+                        mdi-check-all
+                      </v-icon>
+                    </template>
+                  </v-expansion-panel-header>
+                </v-expansion-panel>
+              </v-expansion-panels>
+            </v-expand-transition>
+            <ConfirmDialog ref="confirm" />
           </v-card>
         </v-menu>
       </v-sheet>
@@ -133,8 +205,19 @@
 
 <script>
 import ReminderCalendarScheduler from "@/components/Reminder/ReminderCalendarScheduler.js";
-import { addYears } from "date-fns";
+import {
+  subDays,
+  addMinutes,
+  addYears,
+  isBefore,
+  formatDistance,
+  format
+} from "date-fns";
+import pl from "date-fns/locale/pl";
+import ConfirmDialog from "@/components/Common/ConfirmDialog.vue";
+import EditReminderDialog from "@/components/Reminder/EditReminderDialog.vue";
 export default {
+  components: { ConfirmDialog, EditReminderDialog },
   name: "Calendar",
   data: () => ({
     focus: "",
@@ -146,7 +229,7 @@ export default {
       "4day": "4 Dni"
     },
     reminders: [],
-    currentlyEditing: null,
+    currentlyEditingId: null,
     selectedEvent: {},
     selectedElement: null,
     selectedOpen: false,
@@ -160,10 +243,16 @@ export default {
   computed: {
     reminderEvents() {
       const reminderEvents = this.reminders;
-      Array.prototype.forEach.call(reminderEvents, reminder => {
+      reminderEvents.forEach(reminder => {
         reminder.name = reminder.title;
         reminder.start = reminder.remind_at;
-        reminder.isCyclic = reminder.cyclic ? true : false;
+        reminder.end = format(
+          addMinutes(new Date(reminder.remind_at), 1),
+          "yyyy-MM-dd HH:mm:ss"
+        );
+        reminder.isCyclic = !!reminder.cyclic;
+        reminder.hasPreReminder = !!reminder.pre_reminder;
+        reminder.sent = isBefore(new Date(reminder.remind_at), new Date());
       });
       return reminderEvents;
     }
@@ -176,117 +265,147 @@ export default {
     ReminderCalendarScheduler: ReminderCalendarScheduler,
     getReminders() {
       // api
-      let reminders = [
+      const reminders = [
         {
-          id: 1,
-          title: "Co miesiąc",
-          description: "opis",
-          cyclic: {
-            type: {
-              name: "Month"
-            },
-            periodicity: 1
+          id: 7,
+          title: "Jednorazowy kupić bułki",
+          description: "pamiętaj",
+          pre_reminder: {
+            days_before: 5,
+            remind_at: "2021-03-03 05:30:01"
           },
-          remind_at: "2021-02-24 12:30:01",
-          pre_remind_at: null,
-          pre_reminded: false,
-          channels: ["email", "sms"],
-          active: true,
-          created_at: "2021-02-07 13:03:41"
-        },
-        {
-          id: 2,
-          title: "Zjeść jedzonko",
-          description:
-            "W przeciwieństwie do rozpowszechnionych opinii, Lorem Ipsum nie jest tylko przypadkowym tekstem. Ma ono korzenie w klasycznej łacińskiej literaturze z 45 roku przed Chrystusem, czyli ponad 2000 lat temu! Richard McClintock, wykładowca",
           cyclic: null,
-          remind_at: "2021-03-27 14:00:00",
-          pre_remind_at: null,
-          pre_reminded: false,
+          remind_at: "2021-03-12 13:40:01",
           channels: ["email", "sms"],
-          active: true,
-          created_at: "2021-02-07 13:03:58"
+          color: "info",
+          created_at: "2021-03-04 21:02:06"
         },
         {
-          id: 3,
-          title: "Kupić bułki",
+          id: 8,
+          title: "Umyć włosy",
           description:
-            "W przeciwieństwie do rozpowszechnionych opinii, Lorem Ipsum nie jest tylko przypadkowym tekstem. Ma ono korzenie w klasycznej łacińskiej literaturze z 45 roku przed Chrystusem, czyli ponad 2000 lat temu! Richard McClintock, wykładowca",
+            "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type speci",
+          pre_reminder: {
+            days_before: 6,
+            remind_at: "2021-03-16 22:03:45"
+          },
+          cyclic: {
+            periodicity: 2,
+            type_id: 2
+          },
+          remind_at: "2021-03-04 22:03:45",
+          channels: ["email", "sms"],
+          color: "#F06292",
+          created_at: "2021-03-04 21:02:28"
+        },
+        {
+          id: 9,
+          title: "Iść do fryzjera",
+          description:
+            "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type speci",
+          pre_reminder: null,
+          cyclic: {
+            periodicity: 1,
+            type_id: 3
+          },
+          remind_at: "2021-03-08 13:30:01",
+          channels: ["email", "sms"],
+          color: "primary",
+          created_at: "2021-03-04 21:02:36"
+        },
+        {
+          id: 10,
+          title: "Posprzątać domek",
+          description:
+            "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type speci",
+          pre_reminder: null,
+          cyclic: {
+            periodicity: 8,
+            type_id: 1
+          },
+          remind_at: "2021-03-03 23:00:00",
+          channels: ["email", "sms"],
+          color: "#4E342E",
+          created_at: "2021-03-04 21:02:56"
+        },
+        {
+          id: 11,
+          title: "Zrobić masaż dudusiowi",
+          description:
+            "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type speci",
+          pre_reminder: {
+            days_before: 1,
+            remind_at: "2021-03-04 05:30:01"
+          },
+          cyclic: {
+            periodicity: 7,
+            type_id: 1
+          },
+          remind_at: "2021-03-02 13:30:00",
+          channels: ["email", "sms"],
+          color: "primary",
+          created_at: "2021-03-04 21:03:04"
+        },
+        {
+          id: 12,
+          title: "Iść do sklepu",
+          description:
+            "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type speci",
+          pre_reminder: null,
           cyclic: null,
-          remind_at: "2021-03-10 15:15:00",
-          pre_remind_at: null,
-          pre_reminded: false,
+          remind_at: "2021-03-16 13:30:00",
           channels: ["email", "sms"],
-          active: true,
-          created_at: "2021-02-07 13:03:59"
-        },
-        {
-          id: 4,
-          title: "Co 2 tygodnie",
-          description:
-            "W przeciwieństwie do rozpowszechnionych opinii, Lorem Ipsum nie jest tylko przypadkowym tekstem. Ma ono korzenie w klasycznej łacińskiej literaturze z 45 roku przed Chrystusem, czyli ponad 2000 lat temu! Richard McClintock, wykładowca",
-          cyclic: {
-            type: {
-              name: "Week"
-            },
-            periodicity: 2
-          },
-          remind_at: "2021-02-07 23:51:04",
-          pre_remind_at: null,
-          pre_reminded: false,
-          channels: ["email", "sms"],
-          active: true,
-          created_at: "2021-02-07 13:04:00"
-        },
-        {
-          id: 4,
-          title: "Co 24 dni",
-          description:
-            "W przeciwieństwie do rozpowszechnionych opinii, Lorem Ipsum nie jest tylko przypadkowym tekstem. Ma ono korzenie w klasycznej łacińskiej literaturze z 45 roku przed Chrystusem, czyli ponad 2000 lat temu! Richard McClintock, wykładowca",
-          cyclic: {
-            type: {
-              name: "Day"
-            },
-            periodicity: 24
-          },
-          remind_at: "2021-02-07 23:51:04",
-          pre_remind_at: null,
-          pre_reminded: false,
-          channels: ["email", "sms"],
-          active: true,
-          created_at: "2021-02-07 13:04:00"
+          color: "accent",
+          created_at: "2021-03-04 21:03:09"
         }
       ];
-      let OneYearFromNow = addYears(new Date(), 3);
-      let ReminderCalendarScheduler = new this.ReminderCalendarScheduler(
+      const ThreeYearsFromNow = addYears(new Date(), 3);
+      const ReminderCalendarScheduler = new this.ReminderCalendarScheduler(
         reminders,
-        OneYearFromNow
+        ThreeYearsFromNow
       );
 
       ReminderCalendarScheduler.scheduleReminders();
       this.reminders = ReminderCalendarScheduler.allScheduledReminders;
     },
+    displayHumanReadableReminderDateDistance(reminder) {
+      if (!reminder.remind_at) {
+        return;
+      }
+      return formatDistance(new Date(reminder.remind_at), new Date(), {
+        addSuffix: true,
+        locale: pl
+      });
+    },
+    displayHumanReadablePreReminderDateDistance(reminder) {
+      const preRemindAt = subDays(
+        new Date(reminder.remind_at),
+        reminder.pre_reminder.days_before
+      );
+      return formatDistance(preRemindAt, new Date(), {
+        addSuffix: true,
+        locale: pl
+      });
+    },
+    displayReminderCyclic(cyclic) {
+      return (
+        cyclic.periodicity +
+        " " +
+        this.getLocaleCyclicTypeName(cyclic.periodicity, cyclic.type_id)
+      );
+    },
+    getLocaleCyclicTypeName(periodicity, type_id) {
+      const cyclicTypeNames = {
+        1: periodicity === 1 ? "dzień" : "dni",
+        2: periodicity === 1 ? "tydzień" : "tygodnie",
+        3: periodicity === 1 ? "miesiąc" : "miesiące",
+        4: periodicity === 1 ? "rok" : "lata"
+      };
+      return cyclicTypeNames[type_id];
+    },
     viewDay({ date }) {
       this.focus = date;
       this.type = "day";
-    },
-    getEventColor(event) {
-      if (!event.active) {
-        return "inactive";
-      }
-      return event.isCyclic ? "primary" : "secondary";
-    },
-    getReminderChannelIcon(channel) {
-      const channelIcons = {
-        email: "mdi-email",
-        sms: "mdi-cellphone-iphone"
-      };
-      return channelIcons[channel];
-    },
-    toggleReminderState(reminder) {
-      // api call set active
-      console.log(reminder.id);
-      console.log(reminder.active);
     },
     setToday() {
       this.focus = "";
@@ -296,6 +415,16 @@ export default {
     },
     next() {
       this.$refs.calendar.next();
+    },
+    getEventColor(event) {
+      return event.color;
+    },
+    getReminderChannelIcon(channel) {
+      const channelIcons = {
+        email: "mdi-email",
+        sms: "mdi-cellphone-iphone"
+      };
+      return channelIcons[channel];
     },
     showEvent({ nativeEvent, event }) {
       const open = () => {
@@ -316,12 +445,26 @@ export default {
       nativeEvent.stopPropagation();
     },
     editEvent(event) {
-      this.currentlyEditing = event.id;
+      this.currentlyEditingId = event.id;
     },
-    updateEvent(event) {
+    updateEvent(reminder) {
+      this.currentlyEditingId = null;
+      console.log(reminder);
+    },
+    async deleteEvent(reminderId) {
+      if (
+        !(await this.$refs.confirm.open(
+          "Potwierdź",
+          "Czy na pewno chcesz usunąć to powiadomienie?"
+        ))
+      ) {
+        return;
+      }
+      //api call
       this.selectedOpen = false;
-      this.currentlyEditing = null;
-      console.log(this.events, event);
+      this.reminders = this.reminders.filter(function(reminder) {
+        return reminder.id !== reminderId;
+      });
     }
   }
 };

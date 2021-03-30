@@ -27,7 +27,7 @@
             >Nazwa użytkownika</span
           >
           <div class="my-5">
-            <ReminderDialog />
+            <reminder-dialog />
           </div>
         </div>
       </div>

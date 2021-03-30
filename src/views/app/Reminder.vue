@@ -3,7 +3,7 @@
     <h1 class="text-sm-h5 text-md-h4 grey--text px-3 py-4 lighten-5 heading">
       Przypomnienia
     </h1>
-    <v-container class="mt-3">
+    <v-container>
       <v-sheet height="600">
         <Calendar></Calendar>
       </v-sheet>
