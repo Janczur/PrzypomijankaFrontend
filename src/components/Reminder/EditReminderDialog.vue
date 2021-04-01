@@ -47,7 +47,7 @@
                 <v-row no-gutters>
                   <v-col cols="12">
                     <v-switch
-                      class="mb-0"
+                      class="my-0"
                       v-model="editDate"
                       :color="reminder.color"
                     >
@@ -105,17 +105,50 @@
                   </v-col>
                 </v-row>
               </v-col>
-              <v-col cols="12" sm="6" align-self="end">
-                <v-autocomplete
-                  prepend-icon="mdi-send"
-                  :items="['email', 'sms']"
-                  v-model="reminder.channels"
-                  :color="reminder.color"
-                  :item-color="reminder.color"
-                  :rules="channelsRules"
-                  label="Kanały wysyłki *"
-                  multiple
-                ></v-autocomplete>
+
+              <v-col cols="12" sm="6">
+                <v-row no-gutters>
+                  <v-col cols="12">
+                    <v-menu
+                      transition="slide-x-transition"
+                      :close-on-content-click="false"
+                      offset-x
+                      right
+
+                    >
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-btn
+                          class="mb-4"
+                          :color="reminder.color"
+                          dark
+                          v-bind="attrs"
+                          v-on="on"
+                        >
+                          <v-icon left>mdi-invert-colors mdi-flip-h</v-icon>
+                          Wybierz kolor
+                          <v-icon right>mdi-invert-colors</v-icon>
+                        </v-btn>
+                      </template>
+
+                      <v-color-picker
+                        v-model="reminder.color"
+                        show-swatches
+                      ></v-color-picker>
+                    </v-menu>
+                  </v-col>
+                  <v-col col="12">
+                    <v-autocomplete
+                      prepend-icon="mdi-send"
+                      :items="['email', 'sms']"
+                      v-model="reminder.channels"
+                      :color="reminder.color"
+                      :item-color="reminder.color"
+                      :rules="channelsRules"
+                      label="Kanały wysyłki *"
+                      multiple
+                    ></v-autocomplete>
+                  </v-col>
+                </v-row>
               </v-col>
 
               <v-col cols="12" sm="6">
@@ -308,6 +341,7 @@ export default {
       }
       // api call update
       console.log(this.reminder);
+      this.dialog = false;
     },
     cancel() {
       Object.assign(this.reminder, this.reminderBeforeEdit);

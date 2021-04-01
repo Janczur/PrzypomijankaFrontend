@@ -5,14 +5,14 @@
     </h1>
     <v-container>
       <v-sheet height="600">
-        <Calendar></Calendar>
+        <calendar />
       </v-sheet>
     </v-container>
   </div>
 </template>
 
 <script>
-import Calendar from "@/components/Reminder/Calendar.vue";
+import Calendar from "@/components/Reminder/Calendar/Calendar.vue";
 
 export default {
   name: "Reminder",

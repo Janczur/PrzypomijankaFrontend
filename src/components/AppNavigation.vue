@@ -23,11 +23,11 @@
           <v-avatar size="100">
             <img src="/img/default-avatar.png" alt="" />
           </v-avatar>
-          <span class="white--text text-center subtitle-1 mt-2"
-            >Nazwa użytkownika</span
-          >
+          <span class="white--text text-center subtitle-1 mt-2">
+            Jakiś koleś
+          </span>
           <div class="my-5">
-            <reminder-dialog />
+<!--            <add-reminder-dialog />-->
           </div>
         </div>
       </div>
@@ -53,10 +53,10 @@
 </template>
 
 <script>
-import ReminderDialog from "./Reminder/ReminderDialog.vue";
+// import AddReminderDialog from "./Reminder/AddReminderDialog.vue";
 
 export default {
-  components: { ReminderDialog: ReminderDialog },
+  // components: { AddReminderDialog: AddReminderDialog },
   name: "AppNavigation",
   data: () => ({
     drawer: true,

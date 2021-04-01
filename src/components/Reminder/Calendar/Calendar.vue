@@ -195,7 +195,7 @@
                 </v-expansion-panel>
               </v-expansion-panels>
             </v-expand-transition>
-            <ConfirmDialog ref="confirm" />
+            <confirm-dialog ref="confirm" />
           </v-card>
         </v-menu>
       </v-sheet>
@@ -204,7 +204,7 @@
 </template>
 
 <script>
-import ReminderCalendarScheduler from "@/components/Reminder/ReminderCalendarScheduler.js";
+import ReminderCalendarScheduler from "@/components/Reminder/Calendar/ReminderCalendarScheduler.js";
 import {
   subDays,
   addMinutes,
@@ -216,6 +216,7 @@ import {
 import pl from "date-fns/locale/pl";
 import ConfirmDialog from "@/components/Common/ConfirmDialog.vue";
 import EditReminderDialog from "@/components/Reminder/EditReminderDialog.vue";
+import { getTypeName } from "@/components/Reminder/Cyclic/Type/PolishNameGenerator";
 export default {
   components: { ConfirmDialog, EditReminderDialog },
   name: "Calendar",
@@ -234,11 +235,7 @@ export default {
     selectedElement: null,
     selectedOpen: false,
     dialog: false,
-    events: [],
-    rules: {
-      required: value => !!value || "Pole wymagane.",
-      counter: value => value.length <= 255 || "Maksymalnie 255 znaków"
-    }
+    events: []
   }),
   computed: {
     reminderEvents() {
@@ -275,9 +272,9 @@ export default {
             remind_at: "2021-03-03 05:30:01"
           },
           cyclic: null,
-          remind_at: "2021-03-12 13:40:01",
+          remind_at: "2021-04-12 13:40:01",
           channels: ["email", "sms"],
-          color: "info",
+          color: "75650d",
           created_at: "2021-03-04 21:02:06"
         },
         {
@@ -310,7 +307,7 @@ export default {
           },
           remind_at: "2021-03-08 13:30:01",
           channels: ["email", "sms"],
-          color: "primary",
+          color: "#4caf50",
           created_at: "2021-03-04 21:02:36"
         },
         {
@@ -343,7 +340,7 @@ export default {
           },
           remind_at: "2021-03-02 13:30:00",
           channels: ["email", "sms"],
-          color: "primary",
+          color: "#4caf50",
           created_at: "2021-03-04 21:03:04"
         },
         {
@@ -353,9 +350,9 @@ export default {
             "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type speci",
           pre_reminder: null,
           cyclic: null,
-          remind_at: "2021-03-16 13:30:00",
+          remind_at: "2021-04-16 13:30:00",
           channels: ["email", "sms"],
-          color: "accent",
+          color: "#383F5A",
           created_at: "2021-03-04 21:03:09"
         }
       ];
@@ -391,17 +388,8 @@ export default {
       return (
         cyclic.periodicity +
         " " +
-        this.getLocaleCyclicTypeName(cyclic.periodicity, cyclic.type_id)
+        getTypeName(cyclic.periodicity, cyclic.type_id)
       );
-    },
-    getLocaleCyclicTypeName(periodicity, type_id) {
-      const cyclicTypeNames = {
-        1: periodicity === 1 ? "dzień" : "dni",
-        2: periodicity === 1 ? "tydzień" : "tygodnie",
-        3: periodicity === 1 ? "miesiąc" : "miesiące",
-        4: periodicity === 1 ? "rok" : "lata"
-      };
-      return cyclicTypeNames[type_id];
     },
     viewDay({ date }) {
       this.focus = date;
